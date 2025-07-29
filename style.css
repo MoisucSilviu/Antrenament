@@ -61,4 +61,43 @@ nav li a {
 
 nav li a:hover {
     background-color: #0056b3; /* Culoarea se schimba la hover */
+
+/* --- Stiluri pentru Optimizare Mobilă (Responsive) --- */
+
+/* Se aplică pentru ecrane cu lățimea de maxim 768px (tablete și telefoane) */
+@media (max-width: 768px) {
+    
+    .container {
+        /* Reducem marginile și umbra pe mobil pentru a folosi mai mult spațiu */
+        margin: 0;
+        padding: 15px;
+        border-radius: 0;
+        box-shadow: none;
+    }
+
+    h1 {
+        /* Micșorăm puțin titlul principal */
+        font-size: 1.8rem;
+    }
+
+    h2 {
+        /* Micșorăm titlurile de exerciții */
+        font-size: 1.3rem;
+    }
+
+    .set-input {
+        /* Facem căsuțele de input să se așeze una sub alta */
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start; /* Aliniem la stânga */
+    }
+
+    .set-input label {
+        margin-bottom: 5px;
+    }
+
+    .set-input input {
+        width: 95%; /* Lățime aproape completă */
+        margin-bottom: 10px; /* Spațiu între input-uri */
+    }
 }
