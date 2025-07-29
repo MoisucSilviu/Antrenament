@@ -1,28 +1,47 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-    // Găsește TOATE secțiunile de exerciții marcate ca interactive
     const exercitiiInteractive = document.querySelectorAll('.exercitiu-interactiv');
 
-    // Treci prin fiecare exercițiu găsit și aplică-i logica
+    // Funcție ajutătoare pentru a obține data curentă în format YYYY-MM-DD
+    const getTodayDate = () => {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0'); // Lunile sunt 0-11
+        const day = String(today.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
     exercitiiInteractive.forEach(exercitiuSection => {
         const idExercitiu = exercitiuSection.id;
-        const numarSeturi = parseInt(exercitiuSection.dataset.sets, 10); // Citim nr. de seturi din atributul data-sets
+        const numarSeturi = parseInt(exercitiuSection.dataset.sets, 10);
 
-        if (!idExercitiu || !numarSeturi) return; // Treci la următorul dacă datele sunt incomplete
+        if (!idExercitiu || !numarSeturi) return;
 
-        // Generează dinamic input-urile pentru seturi
+        // Generează dinamic elementele HTML necesare
+        const dataIncarcataP = document.createElement('p');
+        dataIncarcataP.className = 'data-incarcata';
+        exercitiuSection.appendChild(dataIncarcataP);
+
         for (let i = 1; i <= numarSeturi; i++) {
             const setDiv = document.createElement('div');
             setDiv.className = 'set-input';
+            
+            let placeholderKg = "Greutate (kg)";
+            let placeholderReps = "Repetări";
+            
+            if (idExercitiu === 'abdomene-plank') {
+                placeholderKg = "Timp (secunde)";
+                placeholderReps = "N/A";
+            }
+            
             setDiv.innerHTML = `
                 <label>Set ${i}:</label>
-                <input type="number" id="${idExercitiu}-s${i}-kg" placeholder="Greutate (kg)">
-                <input type="number" id="${idExercitiu}-s${i}-reps" placeholder="Repetări">
+                <input type="number" id="${idExercitiu}-s${i}-kg" placeholder="${placeholderKg}">
+                <input type="number" id="${idExercitiu}-s${i}-reps" placeholder="${placeholderReps}">
             `;
             exercitiuSection.appendChild(setDiv);
         }
 
-        // Generează dinamic butonul și mesajul de feedback
         const buton = document.createElement('button');
         buton.textContent = 'Înregistrează Progres';
         const feedback = document.createElement('p');
@@ -30,36 +49,59 @@ document.addEventListener('DOMContentLoaded', () => {
         exercitiuSection.appendChild(buton);
         exercitiuSection.appendChild(feedback);
 
-
-        // --- Funcțiile de Salvare și Încărcare (acum generice) ---
+        // --- Funcțiile de Salvare și Încărcare (Versiunea pe Termen Lung) ---
 
         const salveazaProgres = () => {
-            const progres = {};
+            const today = getTodayDate();
+            let istoric = JSON.parse(localStorage.getItem(idExercitiu)) || [];
+
+            const progresCurent = { seturi: {} };
             for (let i = 1; i <= numarSeturi; i++) {
-                progres[`set${i}`] = {
+                progresCurent.seturi[`set${i}`] = {
                     kg: document.querySelector(`#${idExercitiu}-s${i}-kg`).value,
                     reps: document.querySelector(`#${idExercitiu}-s${i}-reps`).value
                 };
             }
-            localStorage.setItem(idExercitiu, JSON.stringify(progres));
-            feedback.textContent = 'Progres salvat!';
+
+            // Verifică dacă există deja o intrare pentru azi
+            const indexAzi = istoric.findIndex(entry => entry.data === today);
+
+            if (indexAzi > -1) {
+                // Actualizează intrarea de azi
+                istoric[indexAzi].progres = progresCurent;
+            } else {
+                // Adaugă o intrare nouă
+                istoric.push({ data: today, progres: progresCurent });
+            }
+
+            localStorage.setItem(idExercitiu, JSON.stringify(istoric));
+            feedback.textContent = `Progres salvat pentru ${today}!`;
             setTimeout(() => { feedback.textContent = ''; }, 2000);
         };
 
         const incarcaProgres = () => {
-            const progresSalvat = localStorage.getItem(idExercitiu);
-            if (progresSalvat) {
-                const progres = JSON.parse(progresSalvat);
+            const istoric = JSON.parse(localStorage.getItem(idExercitiu)) || [];
+
+            if (istoric.length > 0) {
+                // Sortează pentru a găsi cea mai recentă intrare
+                istoric.sort((a, b) => new Date(b.data) - new Date(a.data));
+                const ultimulProgres = istoric[0];
+                const progres = ultimulProgres.progres;
+                
+                dataIncarcataP.textContent = `Date încărcate din: ${ultimulProgres.data}`;
+
                 for (let i = 1; i <= numarSeturi; i++) {
-                    if (progres[`set${i}`]) {
-                        document.querySelector(`#${idExercitiu}-s${i}-kg`).value = progres[`set${i}`].kg;
-                        document.querySelector(`#${idExercitiu}-s${i}-reps`).value = progres[`set${i}`].reps;
+                    if (progres.seturi[`set${i}`]) {
+                        document.querySelector(`#${idExercitiu}-s${i}-kg`).value = progres.seturi[`set${i}`].kg;
+                        document.querySelector(`#${idExercitiu}-s${i}-reps`).value = progres.seturi[`set${i}`].reps;
                     }
                 }
+            } else {
+                dataIncarcataP.textContent = 'Niciun antrenament înregistrat încă.';
             }
         };
 
         buton.addEventListener('click', salveazaProgres);
-        incarcaProgres(); // Încarcă datele imediat ce scriptul a construit elementele
+        incarcaProgres();
     });
 });
